@@ -4,6 +4,7 @@ import tippy, { type Instance as TippyInstance } from "tippy.js";
 import CommandsList, { type CommandsListHandle, type SlashItem } from "./commands-list";
 import { Code, Heading1, Heading2, Heading3, Image, List, ListOrdered, Pilcrow, Quote, Table } from "lucide-react";
 import type { SuggestionOptions as TiptapSuggestionOptions } from "@tiptap/suggestion";
+import blowfishTemplates from "./blowfish-templates";
 
 export type ImagePickerUrlResult = {
   kind: "url";
@@ -37,9 +38,37 @@ type SuggestionOptions = {
   onInsertLocalImageFile?: ((context: ImagePickerContext & Omit<ImagePickerFileResult, "kind">) => void | Promise<void>) | null;
   enableImages?: boolean;
   imageSlashFallback?: SlashImageFallback;
+  enableBlowfishShortcodes?: boolean;
 };
 
-const TABLE_SAFE_COMMANDS = new Set(["Image"]);
+const insertBlowfishTemplate = ({
+  editor,
+  range,
+  template,
+}: {
+  editor: Editor;
+  range: { from: number; to: number };
+  template: string;
+}) => {
+  if (!template.trimStart().startsWith("{{")) {
+    editor.chain().focus().deleteRange(range).run();
+    editor.commands.insertContent(template, { contentType: "markdown" });
+    return;
+  }
+
+  editor
+    .chain()
+    .focus()
+    .deleteRange(range)
+    .insertContent([
+      {
+        type: "blowfishShortcodeBlock",
+        content: [{ type: "text", text: template }],
+      },
+      { type: "paragraph" },
+    ])
+    .run();
+};
 
 type RequestImageAndInsertArgs = ImagePickerContext & {
   onRequestImage: ImagePickerHandler | null;
@@ -94,37 +123,66 @@ const requestImageAndInsert = async ({
 
 const getAllItems = (options: SuggestionOptions): SlashItem[] => [
   {
+    id: "text",
     title: "Text",
+    description: "普通正文段落",
+    group: "基础格式",
+    searchTerms: ["文本", "正文", "paragraph"],
     icon: Pilcrow,
     command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setParagraph().run(),
   },
   {
+    id: "heading-1",
     title: "Heading 1",
+    description: "一级标题",
+    group: "基础格式",
+    searchTerms: ["标题", "h1"],
     icon: Heading1,
     command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHeading({ level: 1 }).run(),
   },
   {
+    id: "heading-2",
     title: "Heading 2",
+    description: "二级标题",
+    group: "基础格式",
+    searchTerms: ["标题", "h2"],
     icon: Heading2,
     command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHeading({ level: 2 }).run(),
   },
   {
+    id: "heading-3",
     title: "Heading 3",
+    description: "三级标题",
+    group: "基础格式",
+    searchTerms: ["标题", "h3"],
     icon: Heading3,
     command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHeading({ level: 3 }).run(),
   },
   {
+    id: "bullet-list",
     title: "Bulleted list",
+    description: "无序列表",
+    group: "基础格式",
+    searchTerms: ["列表", "项目符号", "ul"],
     icon: List,
     command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleBulletList().run(),
   },
   {
+    id: "numbered-list",
     title: "Numbered list",
+    description: "有序列表",
+    group: "基础格式",
+    searchTerms: ["列表", "编号", "ol"],
     icon: ListOrdered,
     command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleOrderedList().run(),
   },
   {
+    id: "image",
     title: "Image",
+    description: "上传或插入一张图片",
+    group: "基础格式",
+    searchTerms: ["图片", "照片", "photo"],
+    tableSafe: true,
     icon: Image,
     command: ({ editor, range }) => {
       void requestImageAndInsert({
@@ -137,21 +195,45 @@ const getAllItems = (options: SuggestionOptions): SlashItem[] => [
     },
   },
   {
+    id: "table",
     title: "Table",
+    description: "插入 3 × 3 Markdown 表格",
+    group: "基础格式",
+    searchTerms: ["表格"],
     icon: Table,
     command: ({ editor, range }) =>
       editor.chain().focus().deleteRange(range).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
   },
   {
+    id: "quote",
     title: "Quote",
+    description: "引用内容",
+    group: "基础格式",
+    searchTerms: ["引用", "blockquote"],
     icon: Quote,
     command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleBlockquote().run(),
   },
   {
+    id: "code-block",
     title: "Code block",
+    description: "多行代码块",
+    group: "基础格式",
+    searchTerms: ["代码", "源码"],
     icon: Code,
     command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleCodeBlock().run(),
   },
+  ...(options.enableBlowfishShortcodes === false
+    ? []
+    : blowfishTemplates.map((item): SlashItem => ({
+        id: item.shortcode,
+        title: item.title,
+        description: item.description,
+        group: "Blowfish 组件",
+        searchTerms: [item.shortcode, ...item.keywords],
+        icon: item.icon,
+        command: ({ editor, range }) =>
+          insertBlowfishTemplate({ editor, range, template: item.template }),
+      }))),
 ];
 
 type SlashSuggestion = Pick<TiptapSuggestionOptions, "items" | "render">;
@@ -161,11 +243,17 @@ type SuggestionKeyDownProps = Parameters<NonNullable<SuggestionRenderLifecycle["
 const createSuggestion = (options: SuggestionOptions = {}): SlashSuggestion => ({
   items: ({ query, editor }: { query: string; editor: Editor }) => {
     const isInTableCell = editor.isActive("tableCell") || editor.isActive("tableHeader");
+    const normalizedQuery = query.trim().toLocaleLowerCase();
     return getAllItems(options)
-      .filter((item) => !isInTableCell || TABLE_SAFE_COMMANDS.has(item.title))
+      .filter((item) => !isInTableCell || item.tableSafe)
       .filter((item) => options.enableImages !== false || item.title !== "Image")
-      .filter((item) => item.title.toLowerCase().includes(query.toLowerCase()))
-      .slice(0, 10);
+      .filter((item) => {
+        if (!normalizedQuery) return true;
+        return [item.title, item.description ?? "", item.id, ...(item.searchTerms ?? [])]
+          .join(" ")
+          .toLocaleLowerCase()
+          .includes(normalizedQuery);
+      });
   },
 
   render: (): SuggestionRenderLifecycle => {

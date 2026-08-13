@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SlashCommands from "./slash-command/commands";
+import BlowfishShortcodeBlock from "./blowfish-shortcode-block";
 import type {
   ImagePickerContext,
   ImagePickerFileResult,
@@ -314,6 +315,7 @@ export function Editor({
         includeChildren: true,
       }),
       Markdown,
+      BlowfishShortcodeBlock,
       SlashCommands.configure({
         onRequestImage: enableImages ? (onRequestImage ?? null) : null,
         onInsertLocalImageFile: ({ file, alt, title }) => {
@@ -324,6 +326,7 @@ export function Editor({
         },
         enableImages,
         imageSlashFallback: imageFallback === "prompt-url" ? "prompt-url" : "none",
+        enableBlowfishShortcodes: format === "markdown",
       }),
     ],
     content: value || (format === "markdown" ? "" : "<p></p>"),
