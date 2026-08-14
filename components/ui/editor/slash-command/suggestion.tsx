@@ -1,8 +1,22 @@
 import { ReactRenderer } from "@tiptap/react";
 import type { Editor } from "@tiptap/core";
 import tippy, { type Instance as TippyInstance } from "tippy.js";
-import CommandsList, { type CommandsListHandle, type SlashItem } from "./commands-list";
-import { Code, Heading1, Heading2, Heading3, Image, List, ListOrdered, Pilcrow, Quote, Table } from "lucide-react";
+import CommandsList, {
+  type CommandsListHandle,
+  type SlashItem,
+} from "./commands-list";
+import {
+  Code,
+  Heading1,
+  Heading2,
+  Heading3,
+  Image,
+  List,
+  ListOrdered,
+  Pilcrow,
+  Quote,
+  Table,
+} from "lucide-react";
 import type { SuggestionOptions as TiptapSuggestionOptions } from "@tiptap/suggestion";
 import blowfishTemplates from "./blowfish-templates";
 
@@ -35,7 +49,11 @@ export type SlashImageFallback = "prompt-url" | "none";
 
 type SuggestionOptions = {
   onRequestImage?: ImagePickerHandler | null;
-  onInsertLocalImageFile?: ((context: ImagePickerContext & Omit<ImagePickerFileResult, "kind">) => void | Promise<void>) | null;
+  onInsertLocalImageFile?:
+    | ((
+        context: ImagePickerContext & Omit<ImagePickerFileResult, "kind">,
+      ) => void | Promise<void>)
+    | null;
   enableImages?: boolean;
   imageSlashFallback?: SlashImageFallback;
   enableBlowfishShortcodes?: boolean;
@@ -50,6 +68,22 @@ const insertBlowfishTemplate = ({
   range: { from: number; to: number };
   template: string;
 }) => {
+  if (template.trimStart().startsWith("> [!")) {
+    editor
+      .chain()
+      .focus()
+      .deleteRange(range)
+      .insertContent([
+        {
+          type: "blowfishAdmonitionBlock",
+          attrs: { raw: template },
+        },
+        { type: "paragraph" },
+      ])
+      .run();
+    return;
+  }
+
   if (!template.trimStart().startsWith("{{")) {
     editor.chain().focus().deleteRange(range).run();
     editor.commands.insertContent(template, { contentType: "markdown" });
@@ -72,7 +106,11 @@ const insertBlowfishTemplate = ({
 
 type RequestImageAndInsertArgs = ImagePickerContext & {
   onRequestImage: ImagePickerHandler | null;
-  onInsertLocalImageFile: ((context: ImagePickerContext & Omit<ImagePickerFileResult, "kind">) => void | Promise<void>) | null;
+  onInsertLocalImageFile:
+    | ((
+        context: ImagePickerContext & Omit<ImagePickerFileResult, "kind">,
+      ) => void | Promise<void>)
+    | null;
   imageSlashFallback: SlashImageFallback;
 };
 
@@ -97,7 +135,8 @@ const requestImageAndInsert = async ({
 
   if (result.kind === "file") {
     if (!onInsertLocalImageFile) return;
-    const fileInsertContext: ImagePickerContext & Omit<ImagePickerFileResult, "kind"> = {
+    const fileInsertContext: ImagePickerContext &
+      Omit<ImagePickerFileResult, "kind"> = {
       editor,
       range,
       file: result.file,
@@ -114,11 +153,7 @@ const requestImageAndInsert = async ({
     ...(result.title ? { title: result.title } : {}),
   };
 
-  editor
-    .chain()
-    .focus()
-    .setImage(imageAttrs)
-    .run();
+  editor.chain().focus().setImage(imageAttrs).run();
 };
 
 const getAllItems = (options: SuggestionOptions): SlashItem[] => [
@@ -129,7 +164,8 @@ const getAllItems = (options: SuggestionOptions): SlashItem[] => [
     group: "基础格式",
     searchTerms: ["文本", "正文", "paragraph"],
     icon: Pilcrow,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setParagraph().run(),
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).setParagraph().run(),
   },
   {
     id: "heading-1",
@@ -138,7 +174,8 @@ const getAllItems = (options: SuggestionOptions): SlashItem[] => [
     group: "基础格式",
     searchTerms: ["标题", "h1"],
     icon: Heading1,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHeading({ level: 1 }).run(),
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).setHeading({ level: 1 }).run(),
   },
   {
     id: "heading-2",
@@ -147,7 +184,8 @@ const getAllItems = (options: SuggestionOptions): SlashItem[] => [
     group: "基础格式",
     searchTerms: ["标题", "h2"],
     icon: Heading2,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHeading({ level: 2 }).run(),
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).setHeading({ level: 2 }).run(),
   },
   {
     id: "heading-3",
@@ -156,7 +194,8 @@ const getAllItems = (options: SuggestionOptions): SlashItem[] => [
     group: "基础格式",
     searchTerms: ["标题", "h3"],
     icon: Heading3,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHeading({ level: 3 }).run(),
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).setHeading({ level: 3 }).run(),
   },
   {
     id: "bullet-list",
@@ -165,7 +204,8 @@ const getAllItems = (options: SuggestionOptions): SlashItem[] => [
     group: "基础格式",
     searchTerms: ["列表", "项目符号", "ul"],
     icon: List,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleBulletList().run(),
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).toggleBulletList().run(),
   },
   {
     id: "numbered-list",
@@ -174,7 +214,8 @@ const getAllItems = (options: SuggestionOptions): SlashItem[] => [
     group: "基础格式",
     searchTerms: ["列表", "编号", "ol"],
     icon: ListOrdered,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleOrderedList().run(),
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).toggleOrderedList().run(),
   },
   {
     id: "image",
@@ -202,7 +243,12 @@ const getAllItems = (options: SuggestionOptions): SlashItem[] => [
     searchTerms: ["表格"],
     icon: Table,
     command: ({ editor, range }) =>
-      editor.chain().focus().deleteRange(range).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+        .run(),
   },
   {
     id: "quote",
@@ -211,7 +257,8 @@ const getAllItems = (options: SuggestionOptions): SlashItem[] => [
     group: "基础格式",
     searchTerms: ["引用", "blockquote"],
     icon: Quote,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleBlockquote().run(),
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).toggleBlockquote().run(),
   },
   {
     id: "code-block",
@@ -220,36 +267,53 @@ const getAllItems = (options: SuggestionOptions): SlashItem[] => [
     group: "基础格式",
     searchTerms: ["代码", "源码"],
     icon: Code,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleCodeBlock().run(),
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).toggleCodeBlock().run(),
   },
   ...(options.enableBlowfishShortcodes === false
     ? []
-    : blowfishTemplates.map((item): SlashItem => ({
-        id: item.shortcode,
-        title: item.title,
-        description: item.description,
-        group: "Blowfish 组件",
-        searchTerms: [item.shortcode, ...item.keywords],
-        icon: item.icon,
-        command: ({ editor, range }) =>
-          insertBlowfishTemplate({ editor, range, template: item.template }),
-      }))),
+    : blowfishTemplates.map(
+        (item): SlashItem => ({
+          id: item.shortcode,
+          title: item.title,
+          description: item.description,
+          group: "Blowfish 组件",
+          searchTerms: [item.shortcode, ...item.keywords],
+          icon: item.icon,
+          command: ({ editor, range }) =>
+            insertBlowfishTemplate({ editor, range, template: item.template }),
+        }),
+      )),
 ];
 
 type SlashSuggestion = Pick<TiptapSuggestionOptions, "items" | "render">;
-type SuggestionRenderLifecycle = NonNullable<ReturnType<NonNullable<SlashSuggestion["render"]>>>;
-type SuggestionKeyDownProps = Parameters<NonNullable<SuggestionRenderLifecycle["onKeyDown"]>>[0];
+type SuggestionRenderLifecycle = NonNullable<
+  ReturnType<NonNullable<SlashSuggestion["render"]>>
+>;
+type SuggestionKeyDownProps = Parameters<
+  NonNullable<SuggestionRenderLifecycle["onKeyDown"]>
+>[0];
 
-const createSuggestion = (options: SuggestionOptions = {}): SlashSuggestion => ({
+const createSuggestion = (
+  options: SuggestionOptions = {},
+): SlashSuggestion => ({
   items: ({ query, editor }: { query: string; editor: Editor }) => {
-    const isInTableCell = editor.isActive("tableCell") || editor.isActive("tableHeader");
+    const isInTableCell =
+      editor.isActive("tableCell") || editor.isActive("tableHeader");
     const normalizedQuery = query.trim().toLocaleLowerCase();
     return getAllItems(options)
       .filter((item) => !isInTableCell || item.tableSafe)
-      .filter((item) => options.enableImages !== false || item.title !== "Image")
+      .filter(
+        (item) => options.enableImages !== false || item.title !== "Image",
+      )
       .filter((item) => {
         if (!normalizedQuery) return true;
-        return [item.title, item.description ?? "", item.id, ...(item.searchTerms ?? [])]
+        return [
+          item.title,
+          item.description ?? "",
+          item.id,
+          ...(item.searchTerms ?? []),
+        ]
           .join(" ")
           .toLocaleLowerCase()
           .includes(normalizedQuery);
@@ -268,7 +332,8 @@ const createSuggestion = (options: SuggestionOptions = {}): SlashSuggestion => (
         });
 
         if (!props.clientRect) return;
-        const referenceRect = () => props.clientRect?.() ?? new DOMRect(0, 0, 0, 0);
+        const referenceRect = () =>
+          props.clientRect?.() ?? new DOMRect(0, 0, 0, 0);
 
         popup = tippy(document.body, {
           getReferenceClientRect: referenceRect,
@@ -285,7 +350,8 @@ const createSuggestion = (options: SuggestionOptions = {}): SlashSuggestion => (
         if (!component) return;
         component.updateProps(props);
         if (!props.clientRect || !popup) return;
-        const referenceRect = () => props.clientRect?.() ?? new DOMRect(0, 0, 0, 0);
+        const referenceRect = () =>
+          props.clientRect?.() ?? new DOMRect(0, 0, 0, 0);
         popup.setProps({ getReferenceClientRect: referenceRect });
       },
 

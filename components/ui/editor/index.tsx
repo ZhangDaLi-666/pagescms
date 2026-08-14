@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SlashCommands from "./slash-command/commands";
+import BlowfishAdmonitionBlock from "./blowfish-admonition-block";
 import BlowfishShortcodeBlock from "./blowfish-shortcode-block";
 import type {
   ImagePickerContext,
@@ -71,21 +72,26 @@ const UploadableImage = Image.extend({
       ...this.parent?.(),
       uploadId: {
         default: null,
-        parseHTML: (element: HTMLElement) => element.getAttribute("data-upload-id"),
+        parseHTML: (element: HTMLElement) =>
+          element.getAttribute("data-upload-id"),
         renderHTML: (attributes: { uploadId?: string | null }) =>
           attributes.uploadId ? { "data-upload-id": attributes.uploadId } : {},
       },
       uploading: {
         default: false,
-        parseHTML: (element: HTMLElement) => element.getAttribute("data-uploading") === "true",
+        parseHTML: (element: HTMLElement) =>
+          element.getAttribute("data-uploading") === "true",
         renderHTML: (attributes: { uploading?: boolean }) =>
           attributes.uploading ? { "data-uploading": "true" } : {},
       },
       uploadError: {
         default: null,
-        parseHTML: (element: HTMLElement) => element.getAttribute("data-upload-error"),
+        parseHTML: (element: HTMLElement) =>
+          element.getAttribute("data-upload-error"),
         renderHTML: (attributes: { uploadError?: string | null }) =>
-          attributes.uploadError ? { "data-upload-error": attributes.uploadError } : {},
+          attributes.uploadError
+            ? { "data-upload-error": attributes.uploadError }
+            : {},
       },
     };
   },
@@ -189,7 +195,8 @@ const toUploadableAttrs = (attrs: unknown): UploadableImageAttrs => {
 
 const splitMarkdownTableCells = (line: string): string[] => {
   const trimmed = line.trim();
-  if (trimmed.length < 2 || !trimmed.startsWith("|") || !trimmed.endsWith("|")) return [];
+  if (trimmed.length < 2 || !trimmed.startsWith("|") || !trimmed.endsWith("|"))
+    return [];
 
   const row = trimmed.slice(1, -1);
   const cells: string[] = [];
@@ -199,7 +206,11 @@ const splitMarkdownTableCells = (line: string): string[] => {
     if (row[index] !== "|") continue;
 
     let slashCount = 0;
-    for (let slashIndex = index - 1; slashIndex >= 0 && row[slashIndex] === "\\"; slashIndex -= 1) {
+    for (
+      let slashIndex = index - 1;
+      slashIndex >= 0 && row[slashIndex] === "\\";
+      slashIndex -= 1
+    ) {
       slashCount += 1;
     }
     if (slashCount % 2 === 1) continue;
@@ -216,19 +227,27 @@ const isMarkdownTableDelimiterLine = (line: string): boolean => {
   if (!MARKDOWN_TABLE_ROW_PATTERN.test(line)) return false;
   const cells = splitMarkdownTableCells(line);
   if (!cells.length) return false;
-  return cells.every((cell) => MARKDOWN_TABLE_DELIMITER_CELL_PATTERN.test(cell.trim()));
+  return cells.every((cell) =>
+    MARKDOWN_TABLE_DELIMITER_CELL_PATTERN.test(cell.trim()),
+  );
 };
 
 const normalizeMarkdownTables = (markdown: string): string =>
   markdown
     .split("\n")
     .map((line) => {
-      if (!MARKDOWN_TABLE_ROW_PATTERN.test(line) || isMarkdownTableDelimiterLine(line)) return line;
+      if (
+        !MARKDOWN_TABLE_ROW_PATTERN.test(line) ||
+        isMarkdownTableDelimiterLine(line)
+      )
+        return line;
 
       const cells = splitMarkdownTableCells(line);
       if (!cells.length) return line;
 
-      const normalizedCells = cells.map((cell) => (TABLE_CELL_NBSP_PATTERN.test(cell.trim()) ? "" : cell.trim()));
+      const normalizedCells = cells.map((cell) =>
+        TABLE_CELL_NBSP_PATTERN.test(cell.trim()) ? "" : cell.trim(),
+      );
       return `| ${normalizedCells.join(" | ")} |`;
     })
     .join("\n");
@@ -315,6 +334,7 @@ export function Editor({
         includeChildren: true,
       }),
       Markdown,
+      BlowfishAdmonitionBlock,
       BlowfishShortcodeBlock,
       SlashCommands.configure({
         onRequestImage: enableImages ? (onRequestImage ?? null) : null,
@@ -325,7 +345,8 @@ export function Editor({
           });
         },
         enableImages,
-        imageSlashFallback: imageFallback === "prompt-url" ? "prompt-url" : "none",
+        imageSlashFallback:
+          imageFallback === "prompt-url" ? "prompt-url" : "none",
         enableBlowfishShortcodes: format === "markdown",
       }),
     ],
@@ -340,12 +361,16 @@ export function Editor({
           if (!editor) return false;
 
           const copyEvent = event as ClipboardEvent;
-          if (!copyEvent.clipboardData || editor.state.selection.empty) return false;
+          if (!copyEvent.clipboardData || editor.state.selection.empty)
+            return false;
 
           const selectionFragment = editor.state.selection.content().content;
 
           if (format === "markdown") {
-            const markdown = editor.storage.markdown?.manager?.serialize(selectionFragment.toJSON()) ?? "";
+            const markdown =
+              editor.storage.markdown?.manager?.serialize(
+                selectionFragment.toJSON(),
+              ) ?? "";
             copyEvent.clipboardData.setData("text/plain", markdown);
             copyEvent.preventDefault();
             return true;
@@ -364,8 +389,8 @@ export function Editor({
       },
       handlePaste: (_view, event) => {
         if (!enableImages || !enableImagePasteDrop) return false;
-        const files = Array.from(event.clipboardData?.files ?? []).filter((file) =>
-          file.type.startsWith("image/"),
+        const files = Array.from(event.clipboardData?.files ?? []).filter(
+          (file) => file.type.startsWith("image/"),
         );
         if (!files.length) return false;
         void insertImagesFromFiles(files, "paste");
@@ -373,14 +398,21 @@ export function Editor({
       },
       handleDrop: (view, event, _slice, moved) => {
         if (moved || !enableImages || !enableImagePasteDrop) return false;
-        const files = Array.from(event.dataTransfer?.files ?? []).filter((file) =>
-          file.type.startsWith("image/"),
+        const files = Array.from(event.dataTransfer?.files ?? []).filter(
+          (file) => file.type.startsWith("image/"),
         );
         if (!files.length) return false;
 
-        const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
+        const coords = view.posAtCoords({
+          left: event.clientX,
+          top: event.clientY,
+        });
         if (coords?.pos != null) {
-          view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, coords.pos)));
+          view.dispatch(
+            view.state.tr.setSelection(
+              TextSelection.create(view.state.doc, coords.pos),
+            ),
+          );
         }
 
         void insertImagesFromFiles(files, "drop");
@@ -403,54 +435,65 @@ export function Editor({
     },
   });
 
-  const activeState = (useEditorState({
-    editor,
-    selector: ({ editor: currentEditor }) => {
-      if (!currentEditor) {
-        return defaultActiveState;
-      }
+  const activeState =
+    (useEditorState({
+      editor,
+      selector: ({ editor: currentEditor }) => {
+        if (!currentEditor) {
+          return defaultActiveState;
+        }
 
-      const blockType: BlockType = currentEditor.isActive("heading", { level: 1 })
-        ? "heading1"
-        : currentEditor.isActive("heading", { level: 2 })
-          ? "heading2"
-          : currentEditor.isActive("heading", { level: 3 })
-            ? "heading3"
-            : currentEditor.isActive("bulletList")
-              ? "bulletList"
-              : currentEditor.isActive("orderedList")
-                ? "orderedList"
-                : currentEditor.isActive("blockquote")
-                  ? "blockquote"
-                  : currentEditor.isActive("codeBlock")
-                    ? "codeBlock"
-                    : "paragraph";
+        const blockType: BlockType = currentEditor.isActive("heading", {
+          level: 1,
+        })
+          ? "heading1"
+          : currentEditor.isActive("heading", { level: 2 })
+            ? "heading2"
+            : currentEditor.isActive("heading", { level: 3 })
+              ? "heading3"
+              : currentEditor.isActive("bulletList")
+                ? "bulletList"
+                : currentEditor.isActive("orderedList")
+                  ? "orderedList"
+                  : currentEditor.isActive("blockquote")
+                    ? "blockquote"
+                    : currentEditor.isActive("codeBlock")
+                      ? "codeBlock"
+                      : "paragraph";
 
-      return {
-        blockType,
-        bold: currentEditor.isActive("bold"),
-        italic: currentEditor.isActive("italic"),
-        underline: currentEditor.isActive("underline"),
-        strike: currentEditor.isActive("strike"),
-        code: currentEditor.isActive("code"),
-        link: currentEditor.isActive("link"),
-      };
-    },
-  }) as ActiveState | null) ?? defaultActiveState;
+        return {
+          blockType,
+          bold: currentEditor.isActive("bold"),
+          italic: currentEditor.isActive("italic"),
+          underline: currentEditor.isActive("underline"),
+          strike: currentEditor.isActive("strike"),
+          code: currentEditor.isActive("code"),
+          link: currentEditor.isActive("link"),
+        };
+      },
+    }) as ActiveState | null) ?? defaultActiveState;
 
   useEffect(() => {
     if (!editor) return;
     if (value === lastEmittedValueRef.current) return;
 
-    const current = format === "markdown" ? normalizeMarkdownTables(editor.getMarkdown()) : editor.getHTML();
+    const current =
+      format === "markdown"
+        ? normalizeMarkdownTables(editor.getMarkdown())
+        : editor.getHTML();
     const hasChanged =
-      format === "markdown" ? value.trimEnd() !== current.trimEnd() : value !== current;
+      format === "markdown"
+        ? value.trimEnd() !== current.trimEnd()
+        : value !== current;
 
     if (hasChanged) {
-      editor.commands.setContent(value || (format === "markdown" ? "" : "<p></p>"), {
-        emitUpdate: false,
-        contentType: format,
-      });
+      editor.commands.setContent(
+        value || (format === "markdown" ? "" : "<p></p>"),
+        {
+          emitUpdate: false,
+          contentType: format,
+        },
+      );
       lastEmittedValueRef.current = value;
     }
   }, [editor, value, format]);
@@ -472,7 +515,8 @@ export function Editor({
   }, [editor, tiptapSurfaceClass]);
 
   useEffect(() => {
-    if ((!showLinkInput && !showTableActions && !showAltInput) || !editor) return;
+    if ((!showLinkInput && !showTableActions && !showAltInput) || !editor)
+      return;
 
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
@@ -562,7 +606,10 @@ export function Editor({
       reader.readAsDataURL(file);
     });
 
-  const preloadImageSource = async (src: string, timeoutMs = UPLOADED_IMAGE_PRELOAD_TIMEOUT_MS): Promise<boolean> =>
+  const preloadImageSource = async (
+    src: string,
+    timeoutMs = UPLOADED_IMAGE_PRELOAD_TIMEOUT_MS,
+  ): Promise<boolean> =>
     new Promise<boolean>((resolve) => {
       const image = new window.Image();
       let settled = false;
@@ -618,7 +665,9 @@ export function Editor({
 
   const finalizeImageUpload = (
     uploadId: string,
-    updater: (currentAttrs: UploadableImageAttrs) => UploadableImageAttrs | null,
+    updater: (
+      currentAttrs: UploadableImageAttrs,
+    ) => UploadableImageAttrs | null,
   ): boolean => {
     const match = findImageNodeByUploadId(uploadId);
     if (!match) return false;
@@ -626,11 +675,16 @@ export function Editor({
     const nextAttrs = updater(match.attrs);
     if (!nextAttrs) return false;
 
-    editor.view.dispatch(editor.state.tr.setNodeMarkup(match.pos, undefined, nextAttrs));
+    editor.view.dispatch(
+      editor.state.tr.setNodeMarkup(match.pos, undefined, nextAttrs),
+    );
     return true;
   };
 
-  const cleanupUpload = (uploadId: string, options?: { revokeBlob?: boolean }): void => {
+  const cleanupUpload = (
+    uploadId: string,
+    options?: { revokeBlob?: boolean },
+  ): void => {
     const shouldRevoke = options?.revokeBlob ?? true;
     const objectUrl = objectUrlByUploadIdRef.current.get(uploadId);
     if (shouldRevoke && objectUrl) URL.revokeObjectURL(objectUrl);
@@ -710,8 +764,12 @@ export function Editor({
         return {
           ...attrs,
           src: resolved.src,
-          alt: resolved.alt ?? (typeof attrs.alt === "string" ? attrs.alt : undefined),
-          title: resolved.title ?? (typeof attrs.title === "string" ? attrs.title : undefined),
+          alt:
+            resolved.alt ??
+            (typeof attrs.alt === "string" ? attrs.alt : undefined),
+          title:
+            resolved.title ??
+            (typeof attrs.title === "string" ? attrs.title : undefined),
           uploading: false,
           uploadError: null,
           uploadId: null,
@@ -729,7 +787,10 @@ export function Editor({
     }
   };
 
-  const insertImagesFromFiles = async (files: File[], source: "paste" | "drop"): Promise<void> => {
+  const insertImagesFromFiles = async (
+    files: File[],
+    source: "paste" | "drop",
+  ): Promise<void> => {
     for (const file of files) {
       await insertLocalImageFile(file, source);
     }
@@ -848,7 +909,12 @@ export function Editor({
   const applyLink = () => {
     const trimmed = linkUrl.trim();
     if (!trimmed) return;
-    editor.chain().focus().extendMarkRange("link").setLink({ href: trimmed }).run();
+    editor
+      .chain()
+      .focus()
+      .extendMarkRange("link")
+      .setLink({ href: trimmed })
+      .run();
     setShowLinkInput(false);
   };
 
@@ -936,9 +1002,15 @@ export function Editor({
           shift: { padding: 8 },
         }}
         shouldShow={({ editor: bubbleEditor, from, to, view, element }) => {
-          const hasEditorFocus = view.hasFocus() || element.contains(document.activeElement);
+          const hasEditorFocus =
+            view.hasFocus() || element.contains(document.activeElement);
           if (!hasEditorFocus) return false;
-          return showLinkInput || showTableActions || showAltInput || (!bubbleEditor.state.selection.empty && from !== to);
+          return (
+            showLinkInput ||
+            showTableActions ||
+            showAltInput ||
+            (!bubbleEditor.state.selection.empty && from !== to)
+          );
         }}
       >
         <div className="flex flex-col gap-1">
@@ -948,7 +1020,9 @@ export function Editor({
                 <select
                   id="block-style"
                   value={activeState.blockType}
-                  onChange={(event) => setBlockType(event.target.value as BlockType)}
+                  onChange={(event) =>
+                    setBlockType(event.target.value as BlockType)
+                  }
                   disabled={disabled}
                   aria-label="Block style"
                   className="h-7 w-full appearance-none rounded-md border border-transparent bg-transparent px-2 pr-5.5 text-sm shadow-none outline-none hover:bg-accent focus-visible:outline-none focus-visible:ring-0 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"
