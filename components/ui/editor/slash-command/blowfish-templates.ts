@@ -55,7 +55,8 @@ const blowfishTemplates: BlowfishTemplate[] = [
     description: "插入带图标和颜色的 Blowfish 消息框",
     keywords: ["警告", "通知", "message", "callout"],
     icon: BadgeAlert,
-    template: '{{< alert icon="triangle-exclamation" >}}\n**注意：** 在这里填写醒目内容。\n{{< /alert >}}',
+    template:
+      '{{< alert icon="triangle-exclamation" >}}\n**注意：** 在这里填写醒目内容。\n{{< /alert >}}',
   },
   {
     title: "开篇语",
@@ -79,7 +80,8 @@ const blowfishTemplates: BlowfishTemplate[] = [
     description: "插入醒目的链接按钮",
     keywords: ["链接", "跳转", "link", "cta"],
     icon: SquareMousePointer,
-    template: '{{< button href="https://example.com" target="_blank" >}}\n访问链接\n{{< /button >}}',
+    template:
+      '{{< button href="https://example.com" target="_blank" >}}\n访问链接\n{{< /button >}}',
   },
   {
     title: "文章卡片",
@@ -87,7 +89,8 @@ const blowfishTemplates: BlowfishTemplate[] = [
     description: "在正文中嵌入站内另一篇文章",
     keywords: ["文章", "内链", "post", "embed"],
     icon: BookOpen,
-    template: '{{< article link="/posts/文章路径/" showSummary=true compactSummary=true >}}',
+    template:
+      '{{< article link="/posts/文章路径/" showSummary=true compactSummary=true >}}',
   },
   {
     title: "最近文章列表",
@@ -147,7 +150,8 @@ const blowfishTemplates: BlowfishTemplate[] = [
     description: "插入带说明、链接和缩放支持的图片",
     keywords: ["图片", "照片", "封面", "caption"],
     icon: Image,
-    template: '{{< figure src="image.jpg" alt="图片说明" caption="图片标题" >}}',
+    template:
+      '{{< figure src="image.jpg" alt="图片说明" caption="图片标题" >}}',
   },
   {
     title: "排布画册",
@@ -164,7 +168,8 @@ const blowfishTemplates: BlowfishTemplate[] = [
     description: "用轮播方式展示多张图片",
     keywords: ["图片", "轮播", "相册", "slider"],
     icon: GalleryHorizontalEnd,
-    template: '{{< carousel images="{gallery/01.jpg,gallery/02.jpg}" aspectRatio="16-9" interval="2500" >}}',
+    template:
+      '{{< carousel images="{gallery/01.jpg,gallery/02.jpg}" aspectRatio="16-9" interval="2500" >}}',
   },
   {
     title: "截图",
@@ -172,7 +177,8 @@ const blowfishTemplates: BlowfishTemplate[] = [
     description: "以设备像素比例显示页面资源截图",
     keywords: ["图片", "屏幕", "screen"],
     icon: Captions,
-    template: '{{< screenshot src="screenshot.png" alt="截图说明" caption="截图标题" >}}',
+    template:
+      '{{< screenshot src="screenshot.png" alt="截图说明" caption="截图标题" >}}',
   },
   {
     title: "Mermaid 图表",
@@ -180,7 +186,8 @@ const blowfishTemplates: BlowfishTemplate[] = [
     description: "用文本绘制流程图、时序图或思维导图",
     keywords: ["流程图", "思维导图", "diagram", "flowchart"],
     icon: Network,
-    template: "{{< mermaid >}}\ngraph LR;\nA[开始] --> B[完成];\n{{< /mermaid >}}",
+    template:
+      "{{< mermaid >}}\ngraph LR;\nA[开始] --> B[完成];\n{{< /mermaid >}}",
   },
   {
     title: "Chart.js 图表",
@@ -253,7 +260,8 @@ const blowfishTemplates: BlowfishTemplate[] = [
     description: "显示 Forgejo 实例中的仓库信息",
     keywords: ["代码", "仓库", "repo", "card"],
     icon: Box,
-    template: '{{< forgejo server="https://codeberg.org" repo="用户名/仓库" >}}',
+    template:
+      '{{< forgejo server="https://codeberg.org" repo="用户名/仓库" >}}',
   },
   {
     title: "Hugging Face 卡片",
@@ -277,7 +285,8 @@ const blowfishTemplates: BlowfishTemplate[] = [
     description: "从远程文件导入指定行的源代码",
     keywords: ["远程", "源码", "import", "source"],
     icon: FileInput,
-    template: '{{< codeimporter url="https://example.com/example.js" type="javascript" startLine="1" endLine="20" >}}',
+    template:
+      '{{< codeimporter url="https://example.com/example.js" type="javascript" startLine="1" endLine="20" >}}',
   },
   {
     title: "Markdown 导入",
@@ -302,7 +311,8 @@ const blowfishTemplates: BlowfishTemplate[] = [
     description: "嵌入本地或远程视频，可设置封面和说明",
     keywords: ["媒体", "mp4", "player"],
     icon: CirclePlay,
-    template: '{{< video src="video.mp4" poster="poster.jpg" caption="视频说明" controls=true playsinline=true >}}',
+    template:
+      '{{< video src="video.mp4" poster="poster.jpg" caption="视频说明" controls=true playsinline=true >}}',
   },
   {
     title: "YouTube Lite",
@@ -310,7 +320,7 @@ const blowfishTemplates: BlowfishTemplate[] = [
     description: "使用 Blowfish 轻量播放器嵌入 YouTube",
     keywords: ["视频", "播放器", "youtube"],
     icon: Youtube,
-    template: '{{< youtubeLite id="VIDEO_ID" label="视频标题" >}}',
+    template: '{{< youtubeLite id="VIDEO_ID" >}}',
   },
   {
     title: "YouTube",
@@ -342,7 +352,8 @@ const blowfishTemplates: BlowfishTemplate[] = [
     description: "插入经过简单保护的邮箱链接",
     keywords: ["邮件", "联系", "mailto"],
     icon: Mail,
-    template: '{{< email email="name@example.com" subject="邮件主题" text="联系我" >}}',
+    template:
+      '{{< email email="name@example.com" subject="邮件主题" text="联系我" >}}',
   },
   {
     title: "从右向左文本",
