@@ -5,6 +5,7 @@ import { Field } from "@/types/field";
 import { swapPrefix } from "@/lib/github-image";
 import { getSchemaByName } from "@/lib/schema";
 import { getFileExtension, extensionCategories, normalizeMediaPath } from "@/lib/utils/file";
+import { getPublicUrl, prependPublicUrl, stripPublicUrl } from "./public-url";
 
 // TODO: sanitize/normalize values on read (e.g. array to string, empty/invalid values)
 const read = (value: any, field: Field, config: Record<string, any>): string | string[] | null => {
@@ -24,7 +25,8 @@ const read = (value: any, field: Field, config: Record<string, any>): string | s
   }
 
   const normalizedValue = normalizeMediaPath(String(value));
-  return swapPrefix(normalizedValue, mediaConfig.output, mediaConfig.input, true);
+  const storedPath = stripPublicUrl(normalizedValue, getPublicUrl(field));
+  return swapPrefix(storedPath, mediaConfig.output, mediaConfig.input, true);
 };
 
 const write = (value: any, field: Field, config: Record<string, any>): string | string[] | null => {
@@ -43,7 +45,8 @@ const write = (value: any, field: Field, config: Record<string, any>): string | 
     return value.map(v => write(v, field, config)) as string[];
   }
   const normalizedValue = normalizeMediaPath(String(value));
-  return swapPrefix(normalizedValue, mediaConfig.input, mediaConfig.output);
+  const outputPath = swapPrefix(normalizedValue, mediaConfig.input, mediaConfig.output);
+  return prependPublicUrl(outputPath, getPublicUrl(field));
 };
 
 const getAllowedExtensions = (field: Field, mediaConfig: any): string[] | undefined => {

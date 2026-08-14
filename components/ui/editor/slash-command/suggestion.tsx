@@ -63,7 +63,7 @@ const insertBlowfishTemplate = ({
     .insertContent([
       {
         type: "blowfishShortcodeBlock",
-        content: [{ type: "text", text: template }],
+        attrs: { raw: template },
       },
       { type: "paragraph" },
     ])

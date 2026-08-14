@@ -44,6 +44,7 @@ export async function GET(
     const valueTemplate = searchParams.get("valueTemplate") || "{path}";
     const labelTemplate = searchParams.get("labelTemplate") || "{name}";
     const searchFields = searchParams.get("searchFields")?.split(",").filter(Boolean) || ["name"];
+    const distinctField = searchParams.get("distinctField")?.trim() || null;
     const selectedValues = searchParams.getAll("value").filter(Boolean);
     const primaryField = getPrimaryField(schema);
 
@@ -51,6 +52,7 @@ export async function GET(
       ...resolveReferenceFieldPaths(extractTemplateFields(valueTemplate), primaryField),
       ...resolveReferenceFieldPaths(extractTemplateFields(labelTemplate), primaryField),
       ...resolveReferenceFieldPaths(searchFields, primaryField),
+      ...(distinctField ? resolveReferenceFieldPaths([distinctField], primaryField) : []),
     ]));
 
     const normalizedPath = normalizePath(schema.path || "");
@@ -84,16 +86,25 @@ export async function GET(
     }
 
     const parsedItems = parseReferenceItems(entries, schema, config, requiredFields, primaryField);
-    const options = parsedItems
-      .map((item) => ({
-        value: String(interpolate(valueTemplate, item, "fields")),
-        label: String(interpolate(labelTemplate, item, "fields")),
-      }))
-      .filter((item) => item.value.length > 0);
+    const options = distinctField
+      ? getDistinctReferenceOptions(parsedItems, distinctField)
+      : parsedItems
+          .map((item) => ({
+            value: String(interpolate(valueTemplate, item, "fields")),
+            label: String(interpolate(labelTemplate, item, "fields")),
+          }))
+          .filter((item) => item.value.length > 0);
 
     const filtered = selectedValues.length > 0
-      ? options.filter((item) => selectedValues.includes(item.value))
-      : filterReferenceOptions(options, parsedItems, query, searchFields);
+      ? selectedValues.map((selectedValue) =>
+          options.find((item) => item.value === selectedValue) ?? {
+            value: selectedValue,
+            label: selectedValue,
+          },
+        )
+      : distinctField
+        ? filterDistinctOptions(options, query)
+        : filterReferenceOptions(options, parsedItems, query, searchFields);
 
     return Response.json({
       status: "success",
@@ -106,6 +117,41 @@ export async function GET(
     return toErrorResponse(error);
   }
 }
+
+const getDistinctReferenceOptions = (
+  items: ParsedReferenceItem[],
+  fieldPath: string,
+) => {
+  const normalizedFieldPath = fieldPath.startsWith("fields.")
+    ? fieldPath.replace(/^fields\./, "")
+    : fieldPath;
+  const values = new Set<string>();
+
+  items.forEach((item) => {
+    const fieldValue = safeAccess(item.fields, normalizedFieldPath);
+    const candidates = Array.isArray(fieldValue) ? fieldValue : [fieldValue];
+    candidates.forEach((candidate) => {
+      if (candidate === null || candidate === undefined) return;
+      const value = String(candidate).trim();
+      if (value) values.add(value);
+    });
+  });
+
+  return Array.from(values)
+    .sort((a, b) => a.localeCompare(b, "zh-CN"))
+    .map((value) => ({ value, label: value }));
+};
+
+const filterDistinctOptions = (
+  options: { value: string; label: string }[],
+  query: string,
+) => {
+  if (!query) return options;
+  const normalizedQuery = query.toLocaleLowerCase();
+  return options.filter((option) =>
+    `${option.value} ${option.label}`.toLocaleLowerCase().includes(normalizedQuery),
+  );
+};
 
 const filterReferenceOptions = (
   options: { value: string; label: string }[],

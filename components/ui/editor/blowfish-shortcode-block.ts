@@ -1,9 +1,11 @@
 import { mergeAttributes, Node } from "@tiptap/core";
+import { ReactNodeViewRenderer } from "@tiptap/react";
 import type {
   MarkdownParseHelpers,
   MarkdownToken,
   MarkdownTokenizer,
 } from "@tiptap/core";
+import BlowfishShortcodePreview from "./blowfish-shortcode-preview";
 
 const SHORTCODE_START_PATTERN = /^\{\{([<%])\s*([A-Za-z][\w-]*)\b[^\n]*?([>%])\}\}[ \t]*(?:\n|$)/;
 
@@ -47,58 +49,56 @@ const shortcodeTokenizer: MarkdownTokenizer = {
   },
 };
 
-const textContent = (content: unknown): string => {
-  if (!Array.isArray(content)) return "";
-  return content
-    .map((child) =>
-      child && typeof child === "object" && "text" in child
-        ? String((child as { text?: unknown }).text ?? "")
-        : "",
-    )
-    .join("");
-};
-
 /**
- * An editable preformatted block that round-trips Hugo/Blowfish shortcode
- * source without escaping it or wrapping it in Markdown code fences.
+ * A visual shortcode block that round-trips Hugo/Blowfish source without
+ * escaping it or wrapping it in Markdown code fences.
  */
 const BlowfishShortcodeBlock = Node.create({
   name: "blowfishShortcodeBlock",
   group: "block",
-  content: "text*",
-  marks: "",
-  code: true,
+  atom: true,
+  selectable: true,
   defining: true,
+
+  addAttributes() {
+    return {
+      raw: {
+        default: "",
+        parseHTML: (element) => element.textContent ?? "",
+      },
+    };
+  },
 
   parseHTML() {
     return [{ tag: 'pre[data-blowfish-shortcode="true"]', preserveWhitespace: "full" }];
   },
 
-  renderHTML({ HTMLAttributes }) {
+  renderHTML({ HTMLAttributes, node }) {
+    const { raw: _rawAttribute, ...attributes } = HTMLAttributes;
     return [
       "pre",
-      mergeAttributes(HTMLAttributes, {
+      mergeAttributes(attributes, {
         "data-blowfish-shortcode": "true",
         class:
           "my-2 overflow-x-auto whitespace-pre-wrap rounded-md border border-primary/25 bg-muted/60 px-3 py-2 font-mono text-sm",
         spellcheck: "false",
       }),
-      ["code", 0],
+      ["code", String(node.attrs.raw ?? "")],
     ];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(BlowfishShortcodePreview);
   },
 
   markdownTokenName: "blowfishShortcodeBlock",
   markdownTokenizer: shortcodeTokenizer,
   parseMarkdown(token: MarkdownToken, helpers: MarkdownParseHelpers) {
     const source = String(token.text ?? token.raw ?? "").trimEnd();
-    return helpers.createNode(
-      "blowfishShortcodeBlock",
-      {},
-      source ? [helpers.createTextNode(source)] : [],
-    );
+    return helpers.createNode("blowfishShortcodeBlock", { raw: source });
   },
   renderMarkdown(node) {
-    return textContent(node.content);
+    return String(node.attrs?.raw ?? "");
   },
 });
 

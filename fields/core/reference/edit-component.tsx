@@ -81,6 +81,8 @@ const EditComponent = (props: any) => {
     ? `/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/references/${collectionName}`
     : null;
   const searchFields = typeof field.options?.search === "string" ? field.options.search : "name";
+  const distinctField = typeof field.options?.distinct === "string" ? field.options.distinct.trim() : "";
+  const allowCreate = field.options?.allowCreate === true;
   const valueTemplate = typeof field.options?.value === "string" ? field.options.value : "{path}";
   const labelTemplate = typeof field.options?.label === "string" ? field.options.label : "{name}";
 
@@ -102,6 +104,7 @@ const EditComponent = (props: any) => {
         valueTemplate,
         labelTemplate,
       });
+      if (distinctField) searchParams.set("distinctField", distinctField);
 
       try {
         const response = await fetch(`${url}?${searchParams.toString()}`);
@@ -134,6 +137,7 @@ const EditComponent = (props: any) => {
     collectionPath,
     searchTerm,
     searchFields,
+    distinctField,
     valueTemplate,
     labelTemplate,
   ]);
@@ -165,6 +169,7 @@ const EditComponent = (props: any) => {
         valueTemplate,
         labelTemplate,
       });
+      if (distinctField) searchParams.set("distinctField", distinctField);
       selectedValuesForRequest.forEach((selectedValue) => {
         searchParams.append("value", selectedValue);
       });
@@ -198,6 +203,7 @@ const EditComponent = (props: any) => {
     url,
     collectionPath,
     selectedValuesKey,
+    distinctField,
     valueTemplate,
     labelTemplate,
   ]);
@@ -225,21 +231,42 @@ const EditComponent = (props: any) => {
     ? undefined
     : field.options?.placeholder || "Select...";
 
+  const displayedOptions = useMemo(() => {
+    const nextOptions = [...mergedOptions];
+    const candidate = searchTerm.trim();
+    if (
+      allowCreate &&
+      candidate &&
+      !nextOptions.some(
+        (option) => option.value.toLocaleLowerCase() === candidate.toLocaleLowerCase(),
+      )
+    ) {
+      nextOptions.unshift({
+        value: candidate,
+        label: `${candidate}（新增）`,
+        resolved: true,
+      });
+    }
+    return nextOptions;
+  }, [allowCreate, mergedOptions, searchTerm]);
+
   const handleValueChange = (nextValue: Option[] | Option | null) => {
     if (isReadonly) return;
     if (multiple) {
       onChange(Array.isArray(nextValue) ? nextValue.map((option) => option.value) : []);
+      setSearchTerm("");
       return;
     }
 
     onChange(nextValue ? (nextValue as Option).value : null);
+    setSearchTerm("");
   };
 
   if (!config || !collectionPath) return null;
 
   return (
     <Combobox
-      items={mergedOptions}
+      items={displayedOptions}
       multiple={multiple}
       value={selectedValue as any}
       onValueChange={handleValueChange as any}

@@ -78,6 +78,7 @@ const CommandsList = forwardRef<CommandsListHandle, CommandsListProps>(({ items,
               {showGroup ? (
                 <div className="text-muted-foreground px-2 pb-1 pt-2 text-xs font-medium first:pt-1">
                   {item.group}
+                  {item.group === "Blowfish 组件" ? " · 插入后可预览和编辑" : ""}
                 </div>
               ) : null}
               <button
